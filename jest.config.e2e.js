@@ -28,4 +28,5 @@ module.exports = {
   globalSetup: '<rootDir>/__tests__/e2e/globalSetup.ts',
   globalTeardown: '<rootDir>/__tests__/e2e/globalTeardown.ts',
   maxWorkers: 1, // Run tests serially to avoid database conflicts
+  forceExit: true, // Force exit after tests complete (Sequelize connections)
 };

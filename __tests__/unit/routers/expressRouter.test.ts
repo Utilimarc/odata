@@ -180,7 +180,7 @@ describe('ExpressRouter', () => {
       });
 
       // Check that routes are registered on the app
-      const routes = (app as any)._router.stack.filter(
+      const routes = (app as any).router.stack.filter(
         (layer: any) => layer.route || layer.name === 'router',
       );
       expect(routes.length).toBeGreaterThan(0);
@@ -194,7 +194,7 @@ describe('ExpressRouter', () => {
       });
 
       // The custom route /active should be registered
-      const routes = (app as any)._router.stack.filter((layer: any) => layer.name === 'router');
+      const routes = (app as any).router.stack.filter((layer: any) => layer.name === 'router');
       expect(routes.length).toBeGreaterThan(0);
     });
 
@@ -205,7 +205,7 @@ describe('ExpressRouter', () => {
       });
 
       // Check for $metadata route (escaped as \$metadata in Express)
-      const routes = (app as any)._router.stack.filter(
+      const routes = (app as any).router.stack.filter(
         (layer: any) => layer.route && layer.route.path === '/\\$metadata',
       );
       expect(routes.length).toBe(1);
@@ -217,7 +217,7 @@ describe('ExpressRouter', () => {
         dataSource,
       });
 
-      const routes = (app as any)._router.stack.filter((layer: any) => layer.name === 'router');
+      const routes = (app as any).router.stack.filter((layer: any) => layer.name === 'router');
       expect(routes.length).toBeGreaterThan(0);
     });
   });

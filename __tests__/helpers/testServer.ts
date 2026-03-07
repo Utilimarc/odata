@@ -28,6 +28,9 @@ export async function startTestServer(port = 3001): Promise<ChildProcess> {
         PORT: port.toString(),
         port: port.toString(),
         DB_PATH: dbPath,
+        DB_DIALECT: 'sqlite',
+        DB_NAME: dbPath,
+        DB_SCHEMA: '',
       },
       stdio: 'pipe',
     });

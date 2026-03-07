@@ -11,7 +11,6 @@ const app = express();
 
 // enable cors
 app.use(cors());
-app.options('*', cors());
 
 // parse JSON request bodies
 app.use(express.json());
