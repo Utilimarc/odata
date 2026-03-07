@@ -1,4 +1,5 @@
 import { Column, DataTypes, HasMany, Model, Table } from '../../../src';
+import type { DataTypeShowcase } from './dataTypeShowcase';
 import type { CustomUser } from './user';
 
 @Table({ underscored: true, tableName: 'departments' })
@@ -33,4 +34,9 @@ export class Department extends Model<Department> {
     relation: [{ foreignKey: 'departmentId', sourceKey: 'id' }],
   })
   public users!: CustomUser[];
+
+  @HasMany(() => require('./dataTypeShowcase').DataTypeShowcase, {
+    relation: [{ foreignKey: 'departmentId', sourceKey: 'id' }],
+  })
+  public showcases!: DataTypeShowcase[];
 }

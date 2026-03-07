@@ -1,4 +1,5 @@
-import { Column, DataTypes, Model, Table } from '../../../src';
+import { Column, DataTypes, HasMany, Model, Table } from '../../../src';
+import type { NoteTag } from './noteTag';
 
 @Table({ underscored: true, tableName: 'tags' })
 export class Tag extends Model<Tag> {
@@ -14,4 +15,9 @@ export class Tag extends Model<Tag> {
     isNullable: false,
   })
   public tagName!: string;
+
+  @HasMany(() => require('./noteTag').NoteTag, {
+    relation: [{ foreignKey: 'tagId', sourceKey: 'tagId' }],
+  })
+  public noteTags!: NoteTag[];
 }

@@ -9,7 +9,7 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'plugin:@typescript-eslint/recommended-requiring-type-checking',
+    'plugin:@typescript-eslint/recommended-type-checked',
   ],
   env: {
     node: true,
@@ -21,16 +21,11 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'warn',
     '@typescript-eslint/explicit-module-boundary-types': 'warn',
     '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     '@typescript-eslint/no-non-null-assertion': 'warn',
 
-    // General rules
-    indent: 'off',
-    '@typescript-eslint/indent': ['error', 2],
-    quotes: 'off',
-    '@typescript-eslint/quotes': ['error', 'single'],
-    semi: 'off',
-    '@typescript-eslint/semi': ['error', 'always'],
+    // Formatting is handled by Prettier — these rules were removed in
+    // @typescript-eslint v8.  Use `npm run format` instead.
 
     // Disable some rules for flexibility
     '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -51,7 +46,7 @@ module.exports = {
         '@typescript-eslint/require-await': 'off',
         '@typescript-eslint/no-misused-promises': 'off',
         '@typescript-eslint/restrict-template-expressions': 'off',
-        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/no-require-imports': 'off',
         'no-async-promise-executor': 'off',
       },
     },

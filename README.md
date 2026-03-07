@@ -7,7 +7,7 @@ A powerful Node.js framework for building REST APIs with full OData v4 query cap
 ## What's Changed in This Fork
 
 - **SQL injection prevention** in the Sequelize adapter (identifier validation, string escaping, cast type allowlist, LIKE wildcard escaping)
-- **OData v4 client compatibility** (Excel, Power Query) — XML CSDL metadata, service document, proper content-type headers
+- **OData v4 client compatibility** (Excel, Power Query) — XML CSDL metadata, service document, proper content-type headers, IEEE754Compatible for BIGINT, JSON/BLOB serialization
 - **PostgreSQL-first testing** via containerized Podman workflow
 - **Demo mode** — one command to spin up a PostgreSQL database with sample data and an OData server that Excel can connect to
 - **405 Method Not Allowed** for unsupported HTTP methods
@@ -63,7 +63,7 @@ All commands run in Podman containers — no local Node.js installation required
 - **Relationship Support**: One-to-many, one-to-one, and many-to-one relationships
 - **Multiple Integration Options**: Express.js Router and OpenRouter for Next.js/serverless
 - **OData Metadata**: XML CSDL (`$metadata`) and JSON service document for client discovery
-- **Excel / Power Query Compatible**: Service document, XML metadata, and spec-compliant responses
+- **Excel / Power Query Compatible**: Service document, XML metadata, IEEE754Compatible headers, JSON/BLOB serialization, and spec-compliant responses
 - **Database Agnostic**: PostgreSQL, MySQL, SQLite, MariaDB, MSSQL, Oracle
 
 ## Installation

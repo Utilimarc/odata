@@ -1,5 +1,6 @@
-import { BelongsTo, Column, DataTypes, Model, Table } from '../../../src';
+import { BelongsTo, Column, DataTypes, HasMany, Model, Table } from '../../../src';
 import type { Category } from './category';
+import type { NoteTag } from './noteTag';
 import type { CustomUser } from './user';
 
 @Table({ underscored: true, tableName: 'notes' })
@@ -78,4 +79,9 @@ export class Note extends Model<Note> {
     isNullable: true,
   })
   public updatedAt!: Date;
+
+  @HasMany(() => require('./noteTag').NoteTag, {
+    relation: [{ foreignKey: 'noteId', sourceKey: 'noteId' }],
+  })
+  public noteTags!: NoteTag[];
 }

@@ -1,8 +1,11 @@
 export { Category } from './category';
+export { DataTypeShowcase } from './dataTypeShowcase';
 export { Department } from './department';
 export { Note } from './note';
+export { NoteTag } from './noteTag';
 export { Permission } from './permission';
 export { Role } from './role';
+export { RolePermission } from './rolePermission';
 export { Tag } from './tag';
 export { CustomUser } from './user';
 export { UserRole } from './userRole';

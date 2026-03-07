@@ -2,6 +2,7 @@
 -- This script is idempotent — safe to run multiple times.
 
 -- Drop all tables (reverse dependency order)
+DROP TABLE IF EXISTS data_type_showcase CASCADE;
 DROP TABLE IF EXISTS role_permissions CASCADE;
 DROP TABLE IF EXISTS user_roles CASCADE;
 DROP TABLE IF EXISTS note_tags CASCADE;
@@ -206,3 +207,69 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 -- User-Role assignments
 INSERT INTO user_roles (user_id, role_id) VALUES
   (10, 1), (1, 2), (2, 3), (3, 2), (4, 3), (5, 4), (6, 4), (7, 4), (8, 4), (9, 5);
+
+-- Data Type Showcase: one column per supported OData/Sequelize data type
+-- JSON values are serialized to strings and BLOB values to base64 by the router.
+CREATE TABLE data_type_showcase (
+  id SERIAL PRIMARY KEY,
+  label VARCHAR(100) NOT NULL,
+  big_int_val BIGINT,
+  small_int_val SMALLINT,
+  decimal_val DECIMAL(10,2),
+  float_val REAL,
+  double_val DOUBLE PRECISION,
+  bool_val BOOLEAN DEFAULT false,
+  string_val VARCHAR(200),
+  text_val TEXT,
+  date_only_val DATE,
+  datetime_val TIMESTAMP DEFAULT NOW(),
+  uuid_val UUID,
+  json_val JSONB,
+  blob_val BYTEA,
+  department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_data_type_showcase_department_id ON data_type_showcase(department_id);
+
+INSERT INTO data_type_showcase (id, label, big_int_val, small_int_val, decimal_val, float_val, double_val, bool_val, string_val, text_val, date_only_val, datetime_val, uuid_val, json_val, blob_val, department_id) VALUES
+  (1, 'Max values',
+    9223372036854775807, 32767, 99999999.99, 3.4028235e+38, 1.7976931348623157e+308,
+    true, 'Hello, World!', 'A longer text field demonstrating TEXT storage in PostgreSQL.',
+    '2025-06-15', NOW() - INTERVAL '10 days',
+    'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    '{"key": "value", "count": 42}',
+    E'\\x48656c6c6f',
+    1),
+  (2, 'Min / negative values',
+    -9223372036854775808, -32768, -99999999.99, -1.5e-45, -5e-324,
+    false, 'Special chars: O''Brien & Co <>"', 'Edge cases with special characters and unicode.',
+    '1970-01-01', NOW() - INTERVAL '365 days',
+    'b1234567-89ab-cdef-0123-456789abcdef',
+    '{"nested": {"a": 1}, "list": [1, 2, 3]}',
+    E'\\xDEADBEEF',
+    2),
+  (3, 'Zero / empty values',
+    0, 0, 0.00, 0.0, 0.0,
+    false, '', '',
+    '2000-01-01', NOW(),
+    'c0000000-0000-0000-0000-000000000000',
+    '{}',
+    E'\\x',
+    3),
+  (4, 'Typical values',
+    42, 100, 1234.56, 3.14159, 2.718281828459045,
+    true, 'A typical string value', 'Typical text content for everyday use.',
+    '2024-03-15', NOW() - INTERVAL '30 days',
+    'd1111111-2222-3333-4444-555555666666',
+    '{"name": "test", "active": true, "tags": ["demo", "showcase"]}',
+    E'\\x010203',
+    4),
+  (5, 'All nulls',
+    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL,
+    NULL, NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL);
+SELECT setval('data_type_showcase_id_seq', (SELECT MAX(id) FROM data_type_showcase));

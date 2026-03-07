@@ -2,15 +2,30 @@ import { Express } from 'express';
 import { DataSource, EndpointNamingConvention, ExpressRouter, ODataControler } from '../../src';
 import {
   CategoryController,
+  DataTypeShowcaseController,
   DepartmentController,
   NoteController,
+  NoteTagController,
   PermissionController,
   RoleController,
+  RolePermissionController,
   TagController,
   UserRoleController,
 } from './controllers';
 
-import { Category, CustomUser, Department, Note, Permission, Role, Tag, UserRole } from './models';
+import {
+  Category,
+  CustomUser,
+  DataTypeShowcase,
+  Department,
+  Note,
+  NoteTag,
+  Permission,
+  Role,
+  RolePermission,
+  Tag,
+  UserRole,
+} from './models';
 
 const createSchema = (app: Express) => {
   const dataSource = new DataSource({
@@ -27,7 +42,7 @@ const createSchema = (app: Express) => {
     },
     schema: process.env.DB_SCHEMA !== undefined ? process.env.DB_SCHEMA : 'public',
     ssl: process.env.DB_SSL === 'true',
-    models: [Department, CustomUser, Note, Category, UserRole, Tag, Role, Permission],
+    models: [Department, CustomUser, Note, Category, UserRole, Tag, Role, Permission, DataTypeShowcase, NoteTag, RolePermission],
   });
 
   // Initialize controllers
@@ -42,6 +57,9 @@ const createSchema = (app: Express) => {
   const roleController = new RoleController();
   const permissionController = new PermissionController();
   const userRoleController = new UserRoleController();
+  const dataTypeShowcaseController = new DataTypeShowcaseController();
+  const noteTagController = new NoteTagController();
+  const rolePermissionController = new RolePermissionController();
 
   new ExpressRouter(app, {
     controllers: [
@@ -53,6 +71,9 @@ const createSchema = (app: Express) => {
       roleController,
       permissionController,
       userRoleController,
+      dataTypeShowcaseController,
+      noteTagController,
+      rolePermissionController,
     ],
     dataSource,
     logger: {

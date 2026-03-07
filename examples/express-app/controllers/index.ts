@@ -1,8 +1,11 @@
 export { CategoryController } from './category.controller';
+export { DataTypeShowcaseController } from './dataTypeShowcase.controller';
 export { DepartmentController } from './department.controller';
 export { NoteController } from './note.controller';
+export { NoteTagController } from './noteTag.controller';
 export { PermissionController } from './permission.controller';
 export { RoleController } from './role.controller';
+export { RolePermissionController } from './rolePermission.controller';
 export { TagController } from './tag.controller';
 export { UserController } from './user.controller';
 export { UserRoleController } from './userRole.controller';

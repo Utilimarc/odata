@@ -221,10 +221,22 @@ export class ExpressRouter {
             responce.meta.totalExecutionTime = executionTime;
             // Use absolute URL for @odata.context and set OData headers
             responce['@odata.context'] = `${req.protocol}://${req.get('host')}${responce['@odata.context']}`;
-            res.set('Content-Type', 'application/json;odata.metadata=minimal;charset=utf-8');
+            // IEEE754Compatible=true tells clients that Int64/Decimal values are JSON strings
+            // (PostgreSQL's pg driver returns BIGINT as strings since JS can't represent 64-bit ints)
+            res.set('Content-Type', 'application/json;odata.metadata=minimal;IEEE754Compatible=true;charset=utf-8');
             res.set('OData-Version', '4.0');
             // Strip non-OData properties — clients like Excel reject unknown top-level properties
             const { meta: _meta, ...odataResponse } = responce as any;
+            // Serialize JSON objects → strings and Buffers → base64 so OData clients
+            // receive Edm.String / Edm.Binary primitives instead of nested objects.
+            if (Array.isArray(odataResponse.value)) {
+              const jsonBlobKeys = this.getJsonBlobKeys(model);
+              if (jsonBlobKeys.size > 0) {
+                odataResponse.value = odataResponse.value.map((row: any) =>
+                  this.serializeNonPrimitives(row, jsonBlobKeys),
+                );
+              }
+            }
             res.send(odataResponse);
           } catch (error) {
             Logger.getLogger().error('Error processing request', error);
@@ -349,6 +361,46 @@ export class ExpressRouter {
       basepath,
       queryParams: params,
     };
+  }
+
+  /**
+   * Identify model properties backed by JSON/JSONB or BLOB/BINARY columns.
+   * Results are cached per model name.
+   */
+  private jsonBlobKeyCache = new Map<string, Set<string>>();
+  private getJsonBlobKeys(model: typeof import('../core').Model): Set<string> {
+    const name = model.getModelName();
+    if (this.jsonBlobKeyCache.has(name)) {
+      return this.jsonBlobKeyCache.get(name)!;
+    }
+    const keys = new Set<string>();
+    const { columnMetadata } = model.getMetadata();
+    for (const col of columnMetadata) {
+      const typeStr = col.dataType.toString({}).toUpperCase();
+      if (typeStr.includes('JSON') || typeStr.includes('BLOB') || typeStr.includes('BINARY') || typeStr.includes('BYTEA')) {
+        keys.add(col.propertyKey);
+      }
+    }
+    this.jsonBlobKeyCache.set(name, keys);
+    return keys;
+  }
+
+  /**
+   * Convert JSON objects → JSON strings and Buffers → base64 strings
+   * so OData clients receive primitive values for Edm.String / Edm.Binary.
+   */
+  private serializeNonPrimitives(row: any, jsonBlobKeys: Set<string>): any {
+    const result = { ...row };
+    for (const key of jsonBlobKeys) {
+      const val = result[key];
+      if (val == null) continue;
+      if (Buffer.isBuffer(val)) {
+        result[key] = val.toString('base64');
+      } else if (typeof val === 'object') {
+        result[key] = JSON.stringify(val);
+      }
+    }
+    return result;
   }
 
   /**

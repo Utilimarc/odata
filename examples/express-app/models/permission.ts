@@ -1,4 +1,5 @@
-import { Column, DataTypes, Model, Table } from '../../../src';
+import { Column, DataTypes, HasMany, Model, Table } from '../../../src';
+import type { RolePermission } from './rolePermission';
 
 @Table({ underscored: true, tableName: 'permissions' })
 export class Permission extends Model<Permission> {
@@ -20,4 +21,9 @@ export class Permission extends Model<Permission> {
     isNullable: true,
   })
   public description!: string;
+
+  @HasMany(() => require('./rolePermission').RolePermission, {
+    relation: [{ foreignKey: 'permissionId', sourceKey: 'permissionId' }],
+  })
+  public rolePermissions!: RolePermission[];
 }
