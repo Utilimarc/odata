@@ -28,6 +28,7 @@
     "test": "npm run test:unit",
     "test:unit": "jest --config jest.config.unit.js",
     "test:e2e": "jest --config jest.config.e2e.js --runInBand",
+    "test:security": "jest --config jest.config.security.js --runInBand",
     "lint": "eslint \"src/**/*.ts\" \"__tests__/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" \"__tests__/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\" \"examples/**/*.ts\"",
@@ -79,7 +80,7 @@
   },
   "homepage": "https://github.com/Phrasecode/odata#readme",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   },
   "peerDependencies": {
     "express": "^4.0.0",
@@ -142,7 +143,6 @@
     "prettier": "^3.7.4",
     "prettier-plugin-organize-imports": "^4.3.0",
     "rimraf": "^5.0.1",
-    "sqlite3": "^5.1.7",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.1",

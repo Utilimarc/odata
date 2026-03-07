@@ -57,9 +57,45 @@ interface ISequelizeQuery {
   as?: string;
 }
 
+// Safe SQL identifier pattern: only allows alphanumeric, underscore, and dollar sign
+const SAFE_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+
 export class SequelizerAdaptor {
   private sequelize: Sequelize;
   private modelCache = new Map<string, SequelizeModelController>();
+
+  /**
+   * Validate that a string is a safe SQL identifier (table name, column name, alias).
+   * Prevents SQL injection through identifier positions in literal() strings.
+   */
+  private validateSqlIdentifier(name: string, context: string): void {
+    if (!name || !SAFE_IDENTIFIER.test(name)) {
+      throw new BadRequestError(
+        `Invalid ${context}: '${name}'. Identifiers must contain only alphanumeric characters and underscores.`,
+      );
+    }
+  }
+
+  /**
+   * Safely escape a string value for use in a SQL literal.
+   * Uses single-quote doubling and rejects null bytes.
+   */
+  private escapeSqlString(value: string): string {
+    if (value.includes('\0')) {
+      throw new BadRequestError('String values must not contain null bytes');
+    }
+    return `'${value.replace(/'/g, "''")}'`;
+  }
+
+  /**
+   * Validate a numeric value for safe use in SQL.
+   */
+  private validateSqlNumber(value: number): string {
+    if (!Number.isFinite(value)) {
+      throw new BadRequestError(`Invalid numeric value: ${value}`);
+    }
+    return String(value);
+  }
 
   constructor(dbConfig: IDbConfig) {
     // For SQLite, use 'storage' instead of 'database'
@@ -395,8 +431,9 @@ export class SequelizerAdaptor {
         {
           // Build safe literal using validated column name and integer value
           const fieldName = leftExpression.field?.name || '';
+          this.validateSqlIdentifier(fieldName, 'column name');
           const flagValue = Math.floor(rightSide);
-          return where(literal(`"${fieldName.replace(/"/g, '""')}" & ${flagValue}`), Op.eq, flagValue);
+          return where(literal(`"${fieldName}" & ${flagValue}`), Op.eq, flagValue);
         }
       default:
         // For simple field comparisons, use object notation
@@ -431,12 +468,14 @@ export class SequelizerAdaptor {
       case 'field':
         // Check if this is a navigation path field
         if (expression.field?.navigationPath && expression.field?.table) {
-          // Use Sequelize's special syntax for joined table fields: $alias.column$
-          const alias = expression.field.navigationPath[0]; // Navigation property name
+          const alias = expression.field.navigationPath[0];
           const columnName = expression.field.name;
+          this.validateSqlIdentifier(alias, 'navigation property');
+          this.validateSqlIdentifier(columnName, 'column name');
           return col(`$${alias}.${columnName}$`);
         }
         // Simple field reference
+        this.validateSqlIdentifier(expression.field?.name || '', 'column name');
         return col(expression.field?.name || '');
 
       case 'count':
@@ -462,14 +501,18 @@ export class SequelizerAdaptor {
   private buildCountExpression(countInfo: any): any {
     const { relationType, sourceTable, targetTable, foreignKey, sourceKey } = countInfo;
 
+    // Validate all identifiers used in the subquery
+    this.validateSqlIdentifier(targetTable, 'target table');
+    this.validateSqlIdentifier(sourceTable, 'source table');
+    this.validateSqlIdentifier(foreignKey, 'foreign key');
+    this.validateSqlIdentifier(sourceKey, 'source key');
+
     // Build the subquery based on the relation type
     let subquery: string;
 
     if (relationType === 'hasMany' || relationType === 'belongsToMany') {
-      // For HasMany: SELECT COUNT(*) FROM related_table WHERE related_table.foreign_key = parent_table.primary_key
       subquery = `(SELECT COUNT(*) FROM "${targetTable}" WHERE "${targetTable}"."${foreignKey}" = "${sourceTable}"."${sourceKey}")`;
     } else if (relationType === 'belongsTo' || relationType === 'hasOne') {
-      // For BelongsTo/HasOne: This would always be 0 or 1, but we support it anyway
       subquery = `(SELECT COUNT(*) FROM "${targetTable}" WHERE "${targetTable}"."${sourceKey}" = "${sourceTable}"."${foreignKey}")`;
     } else {
       throw new BadRequestError(`Unsupported relation type for $count: ${relationType}`);
@@ -492,26 +535,31 @@ export class SequelizerAdaptor {
           return 'NULL';
         }
         if (typeof value === 'string') {
-          return `'${value.replace(/'/g, "''")}'`; // Escape single quotes
+          return this.escapeSqlString(value);
         }
-        if (typeof value === 'number' || typeof value === 'boolean') {
+        if (typeof value === 'number') {
+          return this.validateSqlNumber(value);
+        }
+        if (typeof value === 'boolean') {
           return String(value);
         }
-        return String(value);
+        throw new BadRequestError(`Unsupported literal value type: ${typeof value}`);
 
       case 'field':
         // Check if this is a navigation path field
         if (expression.field?.navigationPath && expression.field?.table) {
-          // Use table alias and column name for joined tables
-          const alias = expression.field.navigationPath[0]; // Navigation property name
+          const alias = expression.field.navigationPath[0];
           const columnName = expression.field.name;
+          this.validateSqlIdentifier(alias, 'navigation property');
+          this.validateSqlIdentifier(columnName, 'column name');
           return `"${alias}"."${columnName}"`;
         }
         // Return quoted column name for simple fields
-        return `"${expression.field?.name || ''}"`;
+        const fieldName = expression.field?.name || '';
+        this.validateSqlIdentifier(fieldName, 'column name');
+        return `"${fieldName}"`;
 
       case 'count':
-        // Handle $count in SQL string context
         return this.countToSql(expression.count);
 
       case 'function':
@@ -530,6 +578,12 @@ export class SequelizerAdaptor {
    */
   private countToSql(countInfo: any): string {
     const { relationType, sourceTable, targetTable, foreignKey, sourceKey } = countInfo;
+
+    // Validate all identifiers used in the subquery
+    this.validateSqlIdentifier(targetTable, 'target table');
+    this.validateSqlIdentifier(sourceTable, 'source table');
+    this.validateSqlIdentifier(foreignKey, 'foreign key');
+    this.validateSqlIdentifier(sourceKey, 'source key');
 
     // Build the subquery based on the relation type
     if (relationType === 'hasMany' || relationType === 'belongsToMany') {
