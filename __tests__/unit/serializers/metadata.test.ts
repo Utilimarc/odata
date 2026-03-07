@@ -288,8 +288,12 @@ describe('mapToEdmType', () => {
     expect(mapToEdmType('BOOL')).toBe('Edm.Boolean');
   });
 
-  it('should map DATE to Edm.Date', () => {
-    expect(mapToEdmType('DATE')).toBe('Edm.Date');
+  it('should map DATE to Edm.DateTimeOffset (Sequelize DATE is a full datetime)', () => {
+    expect(mapToEdmType('DATE')).toBe('Edm.DateTimeOffset');
+  });
+
+  it('should map DATEONLY to Edm.Date', () => {
+    expect(mapToEdmType('DATEONLY')).toBe('Edm.Date');
   });
 
   it('should map DATETIME to Edm.DateTimeOffset', () => {

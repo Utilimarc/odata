@@ -109,12 +109,6 @@ export class SequelizerAdaptor {
       schema: dbConfig.schema,
       ssl: dbConfig.ssl,
       benchmark: true,
-      dialectOptions: {
-        ssl: {
-          require: dbConfig.dialectOptions?.ssl?.require,
-          rejectUnauthorized: dbConfig.dialectOptions?.ssl?.rejectUnauthorized,
-        },
-      },
       logging: (sql: string, timing: any) => {
         Logger.getLogger().info(
           `${sql}`,
@@ -125,6 +119,18 @@ export class SequelizerAdaptor {
         );
       },
     };
+
+    // Only set dialectOptions.ssl when SSL is explicitly configured.
+    // The pg driver interprets the mere presence of the ssl key as
+    // a request to connect with SSL, even if all values are undefined.
+    if (dbConfig.ssl || dbConfig.dialectOptions?.ssl) {
+      sequelizeConfig.dialectOptions = {
+        ssl: {
+          require: dbConfig.dialectOptions?.ssl?.require,
+          rejectUnauthorized: dbConfig.dialectOptions?.ssl?.rejectUnauthorized,
+        },
+      };
+    }
 
     // SQLite uses 'storage' instead of 'database'
     if (dbConfig.dialect === 'sqlite') {

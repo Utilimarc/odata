@@ -1,37 +1,64 @@
 /**
  * Test Server Helper
- * Starts the Express server from examples/express-app for E2E testing
+ * Starts the Express server from examples/express-app for E2E testing.
+ * Supports both SQLite (default) and PostgreSQL (when DB_DIALECT=postgres).
  */
 import { ChildProcess, spawn } from 'child_process';
-import { closeTestDatabase, createTestDatabase } from '../db';
 
 let serverProcess: ChildProcess | null = null;
+
+function isPostgres(): boolean {
+  return (process.env.DB_DIALECT || '').startsWith('postgres');
+}
 
 /**
  * Start the test server by running the example Express app
  */
 export async function startTestServer(port = 3001): Promise<ChildProcess> {
-  console.log('🚀 Creating test database...');
-  await createTestDatabase();
+  let env: Record<string, string>;
 
-  // Get the database path
-  const dbPath = require('path').join(__dirname, '../db/test.db');
+  if (isPostgres()) {
+    // PostgreSQL mode — create schema/seed via pg client
+    console.log('🚀 Creating PostgreSQL test database...');
+    const pg = require('../db/postgres');
+    await pg.createTestDatabase();
+
+    env = {
+      ...process.env as any,
+      PORT: port.toString(),
+      port: port.toString(),
+      DB_DIALECT: 'postgres',
+      DB_HOST: process.env.DB_HOST || 'localhost',
+      DB_PORT: process.env.DB_PORT || '5433',
+      DB_NAME: process.env.DB_NAME || 'odata_test',
+      DB_USER: process.env.DB_USER || 'odata',
+      DB_PASSWORD: process.env.DB_PASSWORD || 'odata',
+      DB_SCHEMA: process.env.DB_SCHEMA || 'public',
+    };
+  } else {
+    // SQLite mode (original behavior)
+    console.log('🚀 Creating SQLite test database...');
+    const sqlite = require('../db');
+    await sqlite.createTestDatabase();
+
+    const dbPath = require('path').join(__dirname, '../db/test.db');
+    env = {
+      ...process.env as any,
+      PORT: port.toString(),
+      port: port.toString(),
+      DB_PATH: dbPath,
+      DB_DIALECT: 'sqlite',
+      DB_NAME: dbPath,
+      DB_SCHEMA: '',
+    };
+  }
 
   console.log('🚀 Starting Express server...');
 
   return new Promise((resolve, reject) => {
     // Start the Express server using ts-node
-    // Note: server.ts uses lowercase 'port' env var, so we set both PORT and port
     serverProcess = spawn('npx', ['ts-node', 'examples/express-app/server.ts'], {
-      env: {
-        ...process.env,
-        PORT: port.toString(),
-        port: port.toString(),
-        DB_PATH: dbPath,
-        DB_DIALECT: 'sqlite',
-        DB_NAME: dbPath,
-        DB_SCHEMA: '',
-      },
+      env,
       stdio: 'pipe',
     });
 
@@ -67,12 +94,12 @@ export async function startTestServer(port = 3001): Promise<ChildProcess> {
       }
     });
 
-    // Timeout after 10 seconds
+    // Timeout after 15 seconds (PostgreSQL may take longer to connect)
     setTimeout(() => {
       if (!serverStarted) {
-        reject(new Error('Server failed to start within 10 seconds'));
+        reject(new Error('Server failed to start within 15 seconds'));
       }
-    }, 10000);
+    }, 15000);
   });
 }
 
@@ -86,7 +113,7 @@ export async function stopTestServer(server: ChildProcess): Promise<void> {
     if (server && !server.killed) {
       server.on('exit', async () => {
         console.log('✅ Test server stopped');
-        await closeTestDatabase();
+        await closeDb();
         serverProcess = null;
         resolve();
       });
@@ -101,8 +128,18 @@ export async function stopTestServer(server: ChildProcess): Promise<void> {
         }
       }, 5000);
     } else {
-      await closeTestDatabase();
+      await closeDb();
       resolve();
     }
   });
+}
+
+async function closeDb(): Promise<void> {
+  if (isPostgres()) {
+    const pg = require('../db/postgres');
+    await pg.closeTestDatabase();
+  } else {
+    const sqlite = require('../db');
+    await sqlite.closeTestDatabase();
+  }
 }

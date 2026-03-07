@@ -34,13 +34,19 @@ const mapToEdmType = (internalType: string): string => {
   if (typeStr.includes('BOOLEAN') || typeStr.includes('BOOL')) {
     return 'Edm.Boolean';
   }
-  if (typeStr.includes('DATE') && !typeStr.includes('TIME')) {
-    return 'Edm.Date';
-  }
   if (typeStr.includes('DATETIME') || typeStr.includes('TIMESTAMP')) {
     return 'Edm.DateTimeOffset';
   }
-  if (typeStr.includes('TIME') && !typeStr.includes('DATE')) {
+  // Sequelize's DataTypes.DATE is a full datetime (TIMESTAMP), not date-only.
+  // Its toString() returns "DATE", so we map it to DateTimeOffset.
+  // Only DATEONLY maps to Edm.Date.
+  if (typeStr === 'DATEONLY') {
+    return 'Edm.Date';
+  }
+  if (typeStr.includes('DATE')) {
+    return 'Edm.DateTimeOffset';
+  }
+  if (typeStr.includes('TIME')) {
     return 'Edm.TimeOfDay';
   }
   if (typeStr.includes('UUID') || typeStr.includes('GUID')) {

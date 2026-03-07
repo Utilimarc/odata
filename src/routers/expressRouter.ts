@@ -14,6 +14,7 @@ import {
 } from '../types';
 import { EndpointNamingConvention, STATUS_CODES } from '../utils/constant';
 import { AppError, BadRequestError } from '../utils/error-management';
+import { generateMetadataXml } from '../serializers/metadataXml';
 import { Logger } from '../utils/logger';
 import { PerfLogger } from '../utils/perfLogger';
 
@@ -64,6 +65,7 @@ export class ExpressRouter {
     Logger.forceSetupLogger(config.logger);
     this.setUpRouters();
     this.setUpMetaDataRouters();
+    this.setUpServiceDocument();
   }
 
   private setUpMetaDataRouters() {
@@ -73,7 +75,20 @@ export class ExpressRouter {
       try {
         const controllerEndpoints = this.buildControllerEndpointInfo();
         const metadata = this.dataSource.getMetadata(controllerEndpoints);
-        res.send(metadata);
+        const accept = _req.get('Accept') || '';
+
+        // Return XML CSDL by default (required by Excel/Power Query).
+        // Return JSON only if explicitly requested.
+        if (accept.includes('application/json')) {
+          res.set('Content-Type', 'application/json;odata.metadata=minimal;charset=utf-8');
+          res.set('OData-Version', '4.0');
+          res.send(metadata);
+        } else {
+          const xml = generateMetadataXml(metadata);
+          res.set('Content-Type', 'application/xml;charset=utf-8');
+          res.set('OData-Version', '4.0');
+          res.send(xml);
+        }
       } catch (error) {
         if (error instanceof AppError) {
           res.status(error.statusCode).json({
@@ -85,6 +100,41 @@ export class ExpressRouter {
           res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' });
         }
       }
+    });
+  }
+
+  /**
+   * Set up the OData service document at the root URL.
+   * This is required by OData clients (e.g., Excel, Power Query) to discover entity sets.
+   */
+  private setUpServiceDocument() {
+    this.app.get('/', (_req, res) => {
+      const entitySets: { name: string; kind: string; url: string }[] = [];
+
+      this.controllers.forEach(controller => {
+        const model = controller.getBaseModel();
+        // Skip QueryModel controllers — they are functions, not entity sets
+        if ((model as any).isCustomQuery === true) return;
+
+        const modelName = model.getModelName();
+        const endpoint = controller.getEndpoint();
+        const url = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+
+        entitySets.push({
+          name: modelName,
+          kind: 'EntitySet',
+          url,
+        });
+      });
+
+      const baseUrl = `${_req.protocol}://${_req.get('host')}`;
+
+      res.set('Content-Type', 'application/json;odata.metadata=minimal;charset=utf-8');
+      res.set('OData-Version', '4.0');
+      res.json({
+        '@odata.context': `${baseUrl}/$metadata`,
+        value: entitySets,
+      });
     });
   }
 
@@ -169,7 +219,13 @@ export class ExpressRouter {
             const responce = await controller.get(queryParser);
             const executionTime = perfLogger.end();
             responce.meta.totalExecutionTime = executionTime;
-            res.send(responce);
+            // Use absolute URL for @odata.context and set OData headers
+            responce['@odata.context'] = `${req.protocol}://${req.get('host')}${responce['@odata.context']}`;
+            res.set('Content-Type', 'application/json;odata.metadata=minimal;charset=utf-8');
+            res.set('OData-Version', '4.0');
+            // Strip non-OData properties — clients like Excel reject unknown top-level properties
+            const { meta: _meta, ...odataResponse } = responce as any;
+            res.send(odataResponse);
           } catch (error) {
             Logger.getLogger().error('Error processing request', error);
 
