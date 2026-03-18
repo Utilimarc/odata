@@ -123,14 +123,13 @@ const convertColumnNameToColumnIdentifier = (
   return rawData;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 const convertFilterColumnNames = (
-  filter: FilterClause | any,
+  filter: FilterClause | any, // eslint-disable-line @typescript-eslint/no-redundant-type-constituents
   columnMetadata: ColumnMetadata[],
   relationMetadata?: RelationMetadata[],
   sourceTableMetadata?: TableMetadata,
   sourceModel?: typeof Model<any>,
-): FilterClause | any => {
+): FilterClause | any => { // eslint-disable-line @typescript-eslint/no-redundant-type-constituents
   // Handle single FilterCondition (new format with leftExpression/rightExpression)
   if (filter.leftExpression && filter.operator && !filter.conditions) {
     return {
