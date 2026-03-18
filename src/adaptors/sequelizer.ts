@@ -280,16 +280,29 @@ export class SequelizerAdaptor {
   }
 
   public buildSequelizeQuery(query: IParsedQuery): any {
+    const attributes = this.buildSelect(query.select || []);
+    const order = this.buildOrderBy(query.orderBy || []);
     const formattedQuery: ISequelizeQuery = {
-      attributes: this.buildSelect(query.select || []),
+      attributes,
       where: this.buildWhere(query.filter),
-      order: this.buildOrderBy(query.orderBy || []),
+      order,
       limit: query.top || undefined,
       offset: query.skip || undefined,
       // $apply and $compute are not fully implemented in the parser, so we ignore them for now
     };
     if (query.expand && query.expand.length > 0) {
       formattedQuery.include = query.expand.map(nestedExpand => this.buildInclude(nestedExpand));
+      // When HasMany includes have sub-filters, Sequelize adds DISTINCT to the
+      // outer query.  PostgreSQL requires ORDER BY columns to appear in the
+      // SELECT list when DISTINCT is used, so ensure they are present.
+      if (attributes && order && order.length > 0) {
+        const attrSet = new Set(attributes);
+        for (const [field] of order) {
+          if (typeof field === 'string' && !attrSet.has(field)) {
+            attributes.push(field);
+          }
+        }
+      }
     }
     return formattedQuery;
   }
@@ -310,6 +323,7 @@ export class SequelizerAdaptor {
     return undefined;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   private buildWhere(filter: FilterClause | any | undefined): any {
     if (!filter) return {};
 
@@ -535,7 +549,7 @@ export class SequelizerAdaptor {
     if (!expression) return 'NULL';
 
     switch (expression.type) {
-      case 'literal':
+      case 'literal': {
         const value = expression.value;
         if (value === null || value === undefined) {
           return 'NULL';
@@ -550,8 +564,9 @@ export class SequelizerAdaptor {
           return String(value);
         }
         throw new BadRequestError(`Unsupported literal value type: ${typeof value}`);
+      }
 
-      case 'field':
+      case 'field': {
         // Check if this is a navigation path field
         if (expression.field?.navigationPath && expression.field?.table) {
           const alias = expression.field.navigationPath[0];
@@ -564,6 +579,7 @@ export class SequelizerAdaptor {
         const fieldName = expression.field?.name || '';
         this.validateSqlIdentifier(fieldName, 'column name');
         return `"${fieldName}"`;
+      }
 
       case 'count':
         return this.countToSql(expression.count);
@@ -664,7 +680,7 @@ export class SequelizerAdaptor {
         return `FLOOR(${args[0]})`;
       case 'ceiling':
         return `CEIL(${args[0]})`;
-      case 'cast':
+      case 'cast': {
         // OData V4 cast(expression, type) -> SQL CAST(expression AS type)
         // Validate the type argument against a strict allowlist to prevent SQL injection.
         const ALLOWED_CAST_TYPES = [
@@ -685,6 +701,7 @@ export class SequelizerAdaptor {
           throw new BadRequestError(`Invalid CAST type: ${rawTypeArg}. Allowed types: ${ALLOWED_CAST_TYPES.join(', ')}`);
         }
         return `CAST(${args[0]} AS ${rawTypeArg})`;
+      }
       default:
         throw new BadRequestError(`Unsupported function: ${func.name}`);
     }
