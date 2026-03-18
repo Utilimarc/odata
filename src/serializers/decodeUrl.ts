@@ -15,6 +15,11 @@ export const decodeUrl = (url: string): IDecodeUrlResponse => {
     ? decodeURIComponent(trimmedUrl.substring(1))
     : decodeURIComponent(trimmedUrl);
 
+  // Reject null bytes — they can be used for injection attacks
+  if (formatedUrl.includes('\0')) {
+    throw new Error('Invalid request: null bytes are not allowed');
+  }
+
   const urlParts = formatedUrl.split('?');
   const queryParams = urlParts[1];
   const path = urlParts[0];
