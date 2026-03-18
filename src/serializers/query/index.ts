@@ -74,6 +74,11 @@ class QueryParser {
 
   private parse(queryString: string) {
     try {
+      // Reject null bytes — they can be used for injection attacks
+      if (queryString.includes('\0') || queryString.includes('%00')) {
+        throw new BadRequestError('Invalid request: null bytes are not allowed');
+      }
+
       const urlParts = queryString.split('?');
       const searchParams = urlParts[1];
       const rawSearchParams: IRawSearchParams = this.getSearchParams(searchParams);

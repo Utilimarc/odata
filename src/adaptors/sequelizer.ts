@@ -280,16 +280,29 @@ export class SequelizerAdaptor {
   }
 
   public buildSequelizeQuery(query: IParsedQuery): any {
+    const attributes = this.buildSelect(query.select || []);
+    const order = this.buildOrderBy(query.orderBy || []);
     const formattedQuery: ISequelizeQuery = {
-      attributes: this.buildSelect(query.select || []),
+      attributes,
       where: this.buildWhere(query.filter),
-      order: this.buildOrderBy(query.orderBy || []),
+      order,
       limit: query.top || undefined,
       offset: query.skip || undefined,
       // $apply and $compute are not fully implemented in the parser, so we ignore them for now
     };
     if (query.expand && query.expand.length > 0) {
       formattedQuery.include = query.expand.map(nestedExpand => this.buildInclude(nestedExpand));
+      // When HasMany includes have sub-filters, Sequelize adds DISTINCT to the
+      // outer query.  PostgreSQL requires ORDER BY columns to appear in the
+      // SELECT list when DISTINCT is used, so ensure they are present.
+      if (attributes && order && order.length > 0) {
+        const attrSet = new Set(attributes);
+        for (const [field] of order) {
+          if (typeof field === 'string' && !attrSet.has(field)) {
+            attributes.push(field);
+          }
+        }
+      }
     }
     return formattedQuery;
   }
