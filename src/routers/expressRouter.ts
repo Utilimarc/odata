@@ -63,6 +63,8 @@ export class ExpressRouter {
     this.controllers = config.controllers;
     this.dataSource = config.dataSource;
     Logger.forceSetupLogger(config.logger);
+    // Disable X-Powered-By header to avoid exposing framework information
+    this.app.disable('x-powered-by');
     this.setUpRouters();
     this.setUpMetaDataRouters();
     this.setUpServiceDocument();
