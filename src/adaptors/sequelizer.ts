@@ -323,7 +323,8 @@ export class SequelizerAdaptor {
     return undefined;
   }
 
-  private buildWhere(filter: FilterClause | undefined): any {
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  private buildWhere(filter: FilterClause | any | undefined): any {
     if (!filter) return {};
 
     // Handle single FilterCondition (when there's only one condition without logical operators)

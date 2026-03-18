@@ -123,13 +123,14 @@ const convertColumnNameToColumnIdentifier = (
   return rawData;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 const convertFilterColumnNames = (
-  filter: FilterClause,
+  filter: FilterClause | any,
   columnMetadata: ColumnMetadata[],
   relationMetadata?: RelationMetadata[],
   sourceTableMetadata?: TableMetadata,
   sourceModel?: typeof Model<any>,
-): FilterClause => {
+): FilterClause | any => {
   // Handle single FilterCondition (new format with leftExpression/rightExpression)
   if (filter.leftExpression && filter.operator && !filter.conditions) {
     return {
