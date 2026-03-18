@@ -323,7 +323,7 @@ export class SequelizerAdaptor {
     return undefined;
   }
 
-  private buildWhere(filter: FilterClause | any | undefined): any {
+  private buildWhere(filter: FilterClause | undefined): any {
     if (!filter) return {};
 
     // Handle single FilterCondition (when there's only one condition without logical operators)
@@ -548,7 +548,7 @@ export class SequelizerAdaptor {
     if (!expression) return 'NULL';
 
     switch (expression.type) {
-      case 'literal':
+      case 'literal': {
         const value = expression.value;
         if (value === null || value === undefined) {
           return 'NULL';
@@ -563,8 +563,9 @@ export class SequelizerAdaptor {
           return String(value);
         }
         throw new BadRequestError(`Unsupported literal value type: ${typeof value}`);
+      }
 
-      case 'field':
+      case 'field': {
         // Check if this is a navigation path field
         if (expression.field?.navigationPath && expression.field?.table) {
           const alias = expression.field.navigationPath[0];
@@ -577,6 +578,7 @@ export class SequelizerAdaptor {
         const fieldName = expression.field?.name || '';
         this.validateSqlIdentifier(fieldName, 'column name');
         return `"${fieldName}"`;
+      }
 
       case 'count':
         return this.countToSql(expression.count);
@@ -677,7 +679,7 @@ export class SequelizerAdaptor {
         return `FLOOR(${args[0]})`;
       case 'ceiling':
         return `CEIL(${args[0]})`;
-      case 'cast':
+      case 'cast': {
         // OData V4 cast(expression, type) -> SQL CAST(expression AS type)
         // Validate the type argument against a strict allowlist to prevent SQL injection.
         const ALLOWED_CAST_TYPES = [
@@ -698,6 +700,7 @@ export class SequelizerAdaptor {
           throw new BadRequestError(`Invalid CAST type: ${rawTypeArg}. Allowed types: ${ALLOWED_CAST_TYPES.join(', ')}`);
         }
         return `CAST(${args[0]} AS ${rawTypeArg})`;
+      }
       default:
         throw new BadRequestError(`Unsupported function: ${func.name}`);
     }

@@ -124,12 +124,12 @@ const convertColumnNameToColumnIdentifier = (
 };
 
 const convertFilterColumnNames = (
-  filter: FilterClause | any,
+  filter: FilterClause,
   columnMetadata: ColumnMetadata[],
   relationMetadata?: RelationMetadata[],
   sourceTableMetadata?: TableMetadata,
   sourceModel?: typeof Model<any>,
-): FilterClause | any => {
+): FilterClause => {
   // Handle single FilterCondition (new format with leftExpression/rightExpression)
   if (filter.leftExpression && filter.operator && !filter.conditions) {
     return {
@@ -189,7 +189,7 @@ const convertFilterExpression = (
   if (!expression) return expression;
 
   switch (expression.type) {
-    case 'field':
+    case 'field': {
       // Check if this is a navigation path (e.g., category/categoryName)
       if (expression.field?.navigationPath && relationMetadata) {
         // Get the navigation property name (first part of the path)
@@ -271,6 +271,7 @@ const convertFilterExpression = (
           name: column.columnIdentifier,
         },
       };
+    }
 
     case 'function':
       // Recursively convert function arguments

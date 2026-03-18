@@ -4,4 +4,4 @@ export const DataTypes = SequelizeDataTypes;
 
 export type IDataType = SequelizeDataTypeInterface;
 
-export interface IEntitySchemaOptions {}
+export type IEntitySchemaOptions = Record<string, unknown>;
