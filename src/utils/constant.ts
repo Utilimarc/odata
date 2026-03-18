@@ -102,7 +102,7 @@ export enum STATUS_CODES {
   UNAUTHORIZED_ERROR = 401,
   FORBIDDEN_ERROR = 403,
   CONFLICT_ERROR = 409,
-  BAD_REQUEST_ERROR = 400,
+  BAD_REQUEST_ERROR = 400, // eslint-disable-line @typescript-eslint/no-duplicate-enum-values
   METHOD_NOT_ALLOWED = 405,
   INTERNAL_SERVER_ERROR = 500,
 }

@@ -31,7 +31,8 @@ describe('01 - Basic OData Queries', () => {
       const data = (await response.json()) as any;
 
       expect(data['@odata.context']).toBeDefined();
-      expect(data).toHaveProperty('meta');
+      // meta is stripped from OData responses for client compatibility
+      expect(data).not.toHaveProperty('meta');
     });
   });
 

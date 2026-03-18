@@ -200,7 +200,7 @@ function parseTokens(tokens: string[]): FilterClause | FilterCondition | undefin
             return expr;
           }
         }
-      } catch (e) {
+      } catch {
         // Failed to parse as logical expression, reset and try as arithmetic
       }
 

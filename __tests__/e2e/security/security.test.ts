@@ -1,6 +1,6 @@
 const USER_URL = process.env.API_BASE_URL || 'http://localhost:3001/CustomUser';
-const DEPT_URL = 'http://localhost:3001/Department';
-const NOTE_URL = 'http://localhost:3001/Note';
+const _DEPT_URL = 'http://localhost:3001/Department';
+const _NOTE_URL = 'http://localhost:3001/Note';
 
 /** Helper: expect non-200 status (error) and verify data is still intact */
 async function expectRejectedAndDataIntact(url: string, maliciousQuery: string) {
