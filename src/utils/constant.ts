@@ -96,7 +96,9 @@ export enum ERROR_CODES {
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
 }
 
+// eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
 export enum STATUS_CODES {
+  VALIDATION_ERROR = 400,
   NOT_FOUND_ERROR = 404,
   UNAUTHORIZED_ERROR = 401,
   FORBIDDEN_ERROR = 403,
